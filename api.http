@@ -1,0 +1,100 @@
+@host = http://localhost:3000
+
+### Server info
+GET {{host}}/
+Accept: application/json
+
+### Health check
+GET {{host}}/api/health
+
+### Unknown route -> 404
+GET {{host}}/api/does-not-exist
+
+### Session (page-load bootstrap; always 200, cookie-driven)
+GET {{host}}/api/auth/session
+Cookie: refreshToken=REPLACE_WITH_REFRESH_COOKIE
+
+### Register (sets httpOnly refresh cookie when `remember: true`)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "Str0ngPass1!",
+  "firstName": "Test",
+  "lastName": "User",
+  "remember": true
+}
+
+### Login (sets httpOnly refresh cookie; `remember: false` -> session cookie)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "Str0ngPass1!",
+  "remember": true
+}
+
+### Refresh (cookie-driven; rotates the refresh token, old one revoked)
+# Re-presenting an already-revoked token kills the whole family (TOKEN_REUSED).
+POST {{host}}/api/auth/refresh
+Cookie: refreshToken=REPLACE_WITH_REFRESH_COOKIE
+
+### Logout (revokes the whole refresh-token family + clears the cookie)
+POST {{host}}/api/auth/logout
+Cookie: refreshToken=REPLACE_WITH_REFRESH_COOKIE
+
+### Me (protected)
+GET {{host}}/api/auth/me
+Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN
+
+### Update profile (protected; upserts the address)
+PATCH {{host}}/api/auth/me
+Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "User",
+  "phone": "+1 555 123 4567",
+  "birthDate": "1995-06-15",
+  "address": {
+    "state": "California",
+    "city": "San Francisco",
+    "line": "123 Market St, Apt 4"
+  }
+}
+
+### Upload a file (auth required; multipart, field name `file`)
+# Returns { url, key, size, mimeType }. Attach `url` wherever it belongs —
+# e.g. PATCH /api/auth/me { "image": "<url>" } for an avatar.
+POST {{host}}/api/uploads
+Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="avatar.png"
+Content-Type: image/png
+
+< ./uploads/REPLACE_WITH_LOCAL_FILE
+------WebKitFormBoundary--
+
+### Change or set password (protected; sets password for OAuth-only accounts)
+PATCH {{host}}/api/auth/me/password
+Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "currentPassword": "Str0ngPass1!",
+  "newPassword": "N3wStr0ngPass2!"
+}
+
+### Delete account (protected; requires password if one is set)
+DELETE {{host}}/api/auth/me
+Authorization: Bearer REPLACE_WITH_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "currentPassword": "N3wStr0ngPass2!"
+}

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules*
+
+# Environment variables — never commit real secrets
+.env
+.env.local
+.env.*.local
+
+# Prisma generated client (regenerated via `prisma generate`)
+/src/generated/prisma
+
+# SQLite database files
+prisma/dev.db*
+
+# Uploaded files (local storage driver)
+uploads/
+
+# Build output
+dist
+build
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode
