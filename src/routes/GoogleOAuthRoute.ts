@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { googleOAuthController } from "../controllers/GoogleOAuthController.js";
+import { start, callback } from "../controllers/GoogleOAuthController.js";
 
 const router = Router();
 
-router.get("/google", googleOAuthController.start);
-router.get("/google/callback", googleOAuthController.callback);
+router.get("/google", start);
+router.get("/google/callback", callback);
 
 export const googleOAuthRouter = router;

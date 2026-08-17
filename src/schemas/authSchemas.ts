@@ -52,7 +52,10 @@ export const updateProfileSchema = z.object({
   phone: z.string().trim().max(30, "Phone number is too long").optional(),
   birthDate: z.string().date("Invalid birth date").optional(),
   image: z.string().trim().max(500, "Image URL is too long").optional(),
-  address: addressSchema,
+  address: z.preprocess(
+    (val) => (typeof val === "string" ? JSON.parse(val) : val),
+    addressSchema,
+  ),
 });
 
 const currentPasswordField = z.string().min(1, "Current password is required").optional();

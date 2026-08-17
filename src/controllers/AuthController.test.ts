@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import crypto from "node:crypto";
-import { authController } from "../controllers/AuthController.js";
-import { userController } from "../controllers/UserController.js";
+import * as authController from "../controllers/AuthController.js";
+import * as userController from "../controllers/UserController.js";
 import { prisma } from "../prisma/prisma.js";
 import { resetDb, createTestUser, createRefreshToken } from "../__tests__/helpers.js";
 

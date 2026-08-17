@@ -6,7 +6,7 @@ import { corsOrigins, env } from "./config/env.js";
 import { prisma } from "./prisma/prisma.js";
 import { authRouter } from "./routes/AuthRoute.js";
 import { googleOAuthRouter } from "./routes/GoogleOAuthRoute.js";
-import { uploadRouter } from "./routes/UploadRoute.js";
+import { userRouter } from "./routes/UserRoute.js";
 import { apiLimiter, authLimiter } from "./middlewares/rate-limiter.js";
 import { errorHandler } from "./middlewares/error-handler.js";
 
@@ -41,7 +41,7 @@ app.use("/api/auth/refresh", authLimiter);
 app.use("/api/auth/google", authLimiter);
 app.use("/api/auth", authRouter);
 app.use("/api/auth", googleOAuthRouter);
-app.use("/api/uploads", uploadRouter);
+app.use("/api/user", userRouter);
 
 app.use((_req, res) => res.status(404).json({ error: "Not found", code: "NOT_FOUND" }));
 app.use(errorHandler);
