@@ -46,38 +46,42 @@ app.use("/api/user", userRouter);
 app.use((_req, res) => res.status(404).json({ error: "Not found", code: "NOT_FOUND" }));
 app.use(errorHandler);
 
-async function main() {
-  await prisma.$connect();
-  console.log("Database connected");
+export default app;
 
-  const server = app.listen(env.PORT, () => {
-    console.log(`Server listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
-  });
+if (!process.env.VERCEL) {
+  async function main() {
+    await prisma.$connect();
+    console.log("Database connected");
 
-  let shuttingDown = false;
-  async function shutdown(signal: string) {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    console.log(`${signal} received, shutting down gracefully...`);
-
-    const forceExit = setTimeout(() => {
-      console.error("Forced shutdown after timeout");
-      process.exit(1);
-    }, 10_000);
-    forceExit.unref();
-
-    server.close(async () => {
-      await prisma.$disconnect();
-      console.log("Database disconnected. Bye.");
-      process.exit(0);
+    const server = app.listen(env.PORT, () => {
+      console.log(`Server listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
     });
+
+    let shuttingDown = false;
+    async function shutdown(signal: string) {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      console.log(`${signal} received, shutting down gracefully...`);
+
+      const forceExit = setTimeout(() => {
+        console.error("Forced shutdown after timeout");
+        process.exit(1);
+      }, 10_000);
+      forceExit.unref();
+
+      server.close(async () => {
+        await prisma.$disconnect();
+        console.log("Database disconnected. Bye.");
+        process.exit(0);
+      });
+    }
+
+    process.on("SIGINT", () => void shutdown("SIGINT"));
+    process.on("SIGTERM", () => void shutdown("SIGTERM"));
   }
 
-  process.on("SIGINT", () => void shutdown("SIGINT"));
-  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  main().catch((err) => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  });
 }
-
-main().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
-});
