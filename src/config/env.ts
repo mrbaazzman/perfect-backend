@@ -10,13 +10,12 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, "JWT_REFRESH_SECRET must be at least 32 chars"),
   JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
-  GOOGLE_CLIENT_ID: z.string().min(1, "GOOGLE_CLIENT_ID is required"),
-  GOOGLE_CLIENT_SECRET: z.string().min(1, "GOOGLE_CLIENT_SECRET is required"),
-  GOOGLE_REDIRECT_URI: z.string().url("GOOGLE_REDIRECT_URI must be a valid URL"),
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  GOOGLE_REDIRECT_URI: z.string().url("GOOGLE_REDIRECT_URI must be a valid URL").optional(),
   FRONTEND_URL: z.string().url("FRONTEND_URL must be a valid URL").default("http://localhost:5173"),
   STORAGE_DRIVER: z.enum(["local", "cloudinary", "s3"]).default("local"),
-  UPLOAD_DIR: z.string().min(1).default("uploads"),
-  UPLOAD_PUBLIC_BASE: z.string().min(1).default("/uploads"),
+  UPLOAD_DIR: z.string().min(1).default("perfect-app/avatars"),
   UPLOAD_MAX_SIZE_MB: z.coerce.number().positive().default(5),
   UPLOAD_ALLOWED_MIMES: z
     .string()
@@ -38,6 +37,27 @@ const envSchema = z.object({
       });
     }
   }
+
+  if (env.GOOGLE_REDIRECT_URI) {
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+      const missing: string[] = [];
+      if (!env.GOOGLE_CLIENT_ID) missing.push("GOOGLE_CLIENT_ID");
+      if (!env.GOOGLE_CLIENT_SECRET) missing.push("GOOGLE_CLIENT_SECRET");
+      ctx.addIssue({
+        code: "custom",
+        path: ["GOOGLE_REDIRECT_URI"],
+        message: `Google OAuth requires ${missing.join(", ")}`,
+      });
+    }
+  }
+
+  if (env.NODE_ENV === "production" && env.CORS_ORIGIN === "*") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["CORS_ORIGIN"],
+      message: "CORS_ORIGIN=* is not allowed in production (security risk with credentials)",
+    });
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -50,30 +70,24 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 
-// Upload policy derived from the env strings above.
-export const uploadAllowedMimes = env.UPLOAD_ALLOWED_MIMES.split(",")
-  .map((mime) => mime.trim().toLowerCase())
-  .filter((mime) => mime.length > 0);
+// --- Derived config ---
 
-export const uploadMaxSizeBytes = env.UPLOAD_MAX_SIZE_MB * 1024 * 1024;
-
-const DURATION_UNITS: Record<string, number> = {
-  s: 1000,
-  m: 60_000,
-  h: 3_600_000,
-  d: 86_400_000,
-};
+const DURATION_UNITS: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
 
 function durationToMs(value: string): number {
   const match = /^(\d+)([smhd])$/.exec(value.trim());
-  if (!match) return 7 * 86_400_000;
-  const unit = match[2]!;
-  return Number(match[1]) * (DURATION_UNITS[unit] ?? 0);
+  if (!match) throw new Error(`Invalid duration: "${value}". Expected <number><unit> (e.g. 15m, 7d)`);
+  return Number(match[1]) * (DURATION_UNITS[match[2]!] ?? 0);
 }
 
-/** Lifetime of the refresh token / cookie, derived from JWT_REFRESH_EXPIRES_IN. */
 export const refreshTokenLifetimeMs = durationToMs(env.JWT_REFRESH_EXPIRES_IN);
 
+export const uploadAllowedMimes = env.UPLOAD_ALLOWED_MIMES.split(",")
+  .map((m) => m.trim().toLowerCase())
+  .filter(Boolean);
+
+export const uploadMaxSizeBytes = env.UPLOAD_MAX_SIZE_MB * 1024 * 1024;
+
 export const corsOrigins = env.CORS_ORIGIN.split(",")
-  .map((origin) => origin.trim())
-  .filter((origin) => origin.length > 0);
+  .map((o) => o.trim())
+  .filter(Boolean);

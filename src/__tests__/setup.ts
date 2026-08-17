@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { prisma } from "../db/prisma.js";
+import { prisma } from "../prisma/prisma.js";
 
 // Ensure the test DB schema is up to date before any tests run.
 execSync("npx prisma migrate deploy", {

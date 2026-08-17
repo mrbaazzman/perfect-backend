@@ -7,13 +7,15 @@ node_modules*
 .env.*.local
 
 # Prisma generated client (regenerated via `prisma generate`)
-/src/generated/prisma
+/src/prisma/generated
 
 # SQLite database files
 prisma/dev.db*
+prisma/test.db*
 
 # Uploaded files (local storage driver)
 uploads/
+uploads-test/
 
 # Build output
 dist

@@ -3,7 +3,7 @@ import { env, refreshTokenLifetimeMs } from "../config/env.js";
 
 export const REFRESH_COOKIE = "refreshToken";
 
-export function refreshCookieOptions(remember: boolean) {
+function refreshCookieOptions(remember: boolean) {
   return {
     httpOnly: true,
     secure: env.NODE_ENV === "production",

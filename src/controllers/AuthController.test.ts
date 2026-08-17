@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import crypto from "node:crypto";
 import { authController } from "../controllers/AuthController.js";
-import { prisma } from "../db/prisma.js";
+import { userController } from "../controllers/UserController.js";
+import { prisma } from "../prisma/prisma.js";
 import { resetDb, createTestUser, createRefreshToken } from "../__tests__/helpers.js";
 
 beforeEach(async () => {
@@ -322,7 +323,7 @@ describe("me", () => {
       firstName: "John",
       lastName: "Doe",
     });
-    const result = await authController.me(reg.user.id);
+    const result = await userController.me(reg.user.id);
 
     expect(result.user.email).toBe("me@example.com");
     expect(result.user.firstName).toBe("John");
@@ -332,7 +333,7 @@ describe("me", () => {
   });
 
   it("throws for non-existent user", async () => {
-    await expect(authController.me("non-existent-id")).rejects.toMatchObject({
+    await expect(userController.me("non-existent-id")).rejects.toMatchObject({
       code: "ACCOUNT_INACTIVE",
     });
   });
@@ -347,7 +348,7 @@ describe("updateProfile", () => {
       email: "profile@example.com",
       password: "Password1",
     });
-    const result = await authController.updateProfile(reg.user.id, {
+    const result = await userController.updateProfile(reg.user.id, {
       firstName: "Jane",
       phone: "+1 555 123 4567",
     });
@@ -361,7 +362,7 @@ describe("updateProfile", () => {
       email: "addr@example.com",
       password: "Password1",
     });
-    const result = await authController.updateProfile(reg.user.id, {
+    const result = await userController.updateProfile(reg.user.id, {
       address: { state: "CA", city: "SF", line: "123 Main" },
     });
 
@@ -373,10 +374,10 @@ describe("updateProfile", () => {
       email: "del-addr@example.com",
       password: "Password1",
     });
-    await authController.updateProfile(reg.user.id, {
+    await userController.updateProfile(reg.user.id, {
       address: { state: "CA", city: "SF", line: "123 Main" },
     });
-    const result = await authController.updateProfile(reg.user.id, { address: null });
+    const result = await userController.updateProfile(reg.user.id, { address: null });
 
     expect(result.user.address).toBeNull();
   });
@@ -391,7 +392,7 @@ describe("changePassword", () => {
       email: "chg@example.com",
       password: "Password1",
     });
-    await authController.changePassword(reg.user.id, {
+    await userController.changePassword(reg.user.id, {
       currentPassword: "Password1",
       newPassword: "NewPass123",
     });
@@ -418,7 +419,7 @@ describe("changePassword", () => {
       password: "Password1",
     });
     await expect(
-      authController.changePassword(reg.user.id, {
+      userController.changePassword(reg.user.id, {
         currentPassword: "WrongPass",
         newPassword: "NewPass123",
       }),
@@ -428,7 +429,7 @@ describe("changePassword", () => {
   it("allows setting password for OAuth-only account (no current password required)", async () => {
     const user = await createTestUser({ email: "oauth-set@example.com" });
     await expect(
-      authController.changePassword(user.id, { newPassword: "BrandNew1" }),
+      userController.changePassword(user.id, { newPassword: "BrandNew1" }),
     ).resolves.toBeUndefined();
   });
 });
@@ -442,7 +443,7 @@ describe("deleteAccount", () => {
       email: "delete@example.com",
       password: "Password1",
     });
-    await authController.deleteAccount(reg.user.id, { currentPassword: "Password1" });
+    await userController.deleteAccount(reg.user.id, { currentPassword: "Password1" });
 
     const user = await prisma.user.findUnique({ where: { id: reg.user.id } });
     expect(user).toBeNull();
@@ -459,14 +460,14 @@ describe("deleteAccount", () => {
       password: "Password1",
     });
     await expect(
-      authController.deleteAccount(reg.user.id, { currentPassword: "WrongPass" }),
+      userController.deleteAccount(reg.user.id, { currentPassword: "WrongPass" }),
     ).rejects.toMatchObject({ code: "WRONG_PASSWORD" });
   });
 
   it("allows OAuth-only account deletion without password", async () => {
     const user = await createTestUser({ email: "del-oauth@example.com" });
     await expect(
-      authController.deleteAccount(user.id, {}),
+      userController.deleteAccount(user.id, {}),
     ).resolves.toBeUndefined();
 
     const deleted = await prisma.user.findUnique({ where: { id: user.id } });

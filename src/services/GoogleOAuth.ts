@@ -48,6 +48,13 @@ interface GoogleProfile {
 let oidcCache: { fetchedAt: number; data: OidcConfig } | null = null;
 let jwksCache: { fetchedAt: number; uri: string; keys: JwkKey[] } | null = null;
 
+function requireOAuthEnv() {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REDIRECT_URI) {
+    throw new ApiError(500, "Google OAuth is not configured", "OAUTH_NOT_CONFIGURED");
+  }
+  return { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET, redirectUri: env.GOOGLE_REDIRECT_URI };
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, {
     headers: { Accept: "application/json" },
@@ -104,9 +111,10 @@ export async function buildAuthUrl(params: {
   codeChallenge: string;
 }): Promise<string> {
   const oidc = await getOidcConfig();
+  const { clientId, redirectUri } = requireOAuthEnv();
   const url = new URL(oidc.authorization_endpoint);
-  url.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
-  url.searchParams.set("redirect_uri", env.GOOGLE_REDIRECT_URI);
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", "openid email profile");
   url.searchParams.set("state", params.state);
@@ -119,11 +127,12 @@ export async function buildAuthUrl(params: {
 /** Exchanges an authorization code for tokens at Google's token endpoint. */
 export async function exchangeCodeForTokens(code: string, codeVerifier: string): Promise<TokenResponse> {
   const oidc = await getOidcConfig();
+  const { clientId, clientSecret, redirectUri } = requireOAuthEnv();
   const body = new URLSearchParams({
     code,
-    client_id: env.GOOGLE_CLIENT_ID,
-    client_secret: env.GOOGLE_CLIENT_SECRET,
-    redirect_uri: env.GOOGLE_REDIRECT_URI,
+    client_id: clientId,
+    client_secret: clientSecret,
+    redirect_uri: redirectUri,
     grant_type: "authorization_code",
     code_verifier: codeVerifier,
   });
@@ -191,12 +200,13 @@ function verifyJwtSignature<T>(
 export async function verifyIdToken(idToken: string, nonce: string): Promise<GoogleProfile> {
   const keys = await getJwks();
   const { payload } = verifyJwtSignature<GoogleProfile>(idToken, keys);
+  const { clientId } = requireOAuthEnv();
 
   const now = Math.floor(Date.now() / 1000);
   if (payload.iss === undefined || !GOOGLE_ISSUERS.includes(payload.iss)) {
     throw new ApiError(400, "ID token issuer is not Google", "OAUTH_INVALID_ID_TOKEN");
   }
-  if (payload.aud !== env.GOOGLE_CLIENT_ID) {
+  if (payload.aud !== clientId) {
     throw new ApiError(400, "ID token audience does not match this client", "OAUTH_INVALID_ID_TOKEN");
   }
   if (payload.exp !== undefined && payload.exp <= now - CLOCK_SKEW_SECONDS) {

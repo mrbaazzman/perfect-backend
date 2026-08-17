@@ -1,8 +1,8 @@
 import { Router } from "express";
 import type { NextFunction, Request, Response } from "express";
 import multer from "multer";
-import { uploadMaxSizeBytes, env, uploadAllowedMimes } from "../config/env.js";
-import { uploadController } from "../controllers/UploadController.js";
+import { env, uploadMaxSizeBytes, uploadAllowedMimes } from "../config/env.js";
+import { userController } from "../controllers/UserController.js";
 import { ApiError } from "../middlewares/error-handler.js";
 import { requireAuth } from "../middlewares/auth.js";
 
@@ -51,7 +51,7 @@ function singleFile(field: string) {
 }
 
 router.post("/", requireAuth, singleFile("file"), async (req, res) => {
-  const result = await uploadController.upload(req);
+  const result = await userController.upload(req);
   res.status(201).json(result);
 });
 

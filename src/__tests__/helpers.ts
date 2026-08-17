@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { prisma } from "../db/prisma.js";
+import { prisma } from "../prisma/prisma.js";
 import { env, refreshTokenLifetimeMs } from "../config/env.js";
 
 /** Delete all rows in FK order so tests start with a clean slate. */
