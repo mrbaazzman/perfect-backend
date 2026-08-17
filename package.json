@@ -1,6 +1,6 @@
 {
   "name": "perfect-backend",
-  "version": "0.0.12",
+  "version": "0.0.14",
   "description": "Minimal, robust, secure Express + Prisma backend template",
   "type": "module",
   "main": "dist/index.js",

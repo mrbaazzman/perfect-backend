@@ -4,9 +4,7 @@ import { prisma } from "../prisma/prisma.js";
 import { storageService } from "../services/StorageService.js";
 import { ApiError } from "../middlewares/error-handler.js";
 import type { Prisma } from "../prisma/generated/client.js";
-import { toPublicUser, verifyCurrentPassword } from "./authHelpers.js";
-
-const BCRYPT_ROUNDS = 10;
+import { BCRYPT_ROUNDS, toPublicUser, verifyCurrentPassword } from "./authHelpers.js";
 
 const MIME_TO_EXT: Record<string, string> = {
   "image/png": ".png",

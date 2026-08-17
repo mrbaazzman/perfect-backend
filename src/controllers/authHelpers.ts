@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { ApiError } from "../middlewares/error-handler.js";
 import type { Address, Prisma } from "../prisma/generated/client.js";
 
+export const BCRYPT_ROUNDS = 10;
+
 // Public profile shape: every scalar field of `User` plus a cleaned (id-free)
 // address. Accepts users with or without the address relation loaded.
 type PublicAddress = Pick<Address, "state" | "city" | "line"> | null;

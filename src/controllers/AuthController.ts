@@ -5,9 +5,7 @@ import { env, refreshTokenLifetimeMs } from "../config/env.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiError } from "../middlewares/error-handler.js";
 import type { Prisma } from "../prisma/generated/client.js";
-import { hashRefreshToken, toPublicUser } from "./authHelpers.js";
-
-const BCRYPT_ROUNDS = 10;
+import { BCRYPT_ROUNDS, hashRefreshToken, toPublicUser } from "./authHelpers.js";
 
 // A legitimately rotating session presents each refresh token exactly once.
 // A re-presented (already revoked) token is the fingerprint of a stolen cookie
